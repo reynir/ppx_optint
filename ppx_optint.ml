@@ -1,0 +1,48 @@
+open Ppxlib
+open Ast_helper
+
+let mklid m lid =
+  Exp.ident { Location.loc = !default_loc ;
+              txt = Longident.Ldot (m, lid) }
+
+let apply m f xs =
+  Exp.(apply (mklid m f)
+         (List.map (fun e -> Asttypes.Nolabel, e) xs))
+
+let optint = Longident.Lident "Optint"
+
+let optint s =
+  let x = Optint.of_string s in
+  if Optint.equal x Optint.zero then
+    mklid optint "zero"
+  else if Optint.equal x Optint.one then
+    mklid optint "one"
+  else if Optint.equal x Optint.minus_one then
+    mklid optint "minus_one"
+  else
+    apply optint "of_string" [Exp.constant (Const.string s)]
+
+let int63 = Longident.Ldot (Longident.Lident "Optint", "Int63")
+
+let int63 s =
+  let module Int63 = Optint.Int63 in
+  let x = Int63.of_string s in
+  if Int63.equal x Int63.zero then
+    mklid int63 "zero"
+  else if Int63.equal x Int63.one then
+    mklid int63 "one"
+  else if Int63.equal x Int63.minus_one then
+    mklid int63 "minus_one"
+  else
+    apply int63 "of_string" [Exp.constant (Const.string s)]
+
+let expander f loc s =
+  with_default_loc loc (fun () -> f s)
+
+let () =
+  Driver.register_transformation
+    "ppx_optint"
+    ~rules:[
+      Context_free.Rule.constant Integer 'i' (expander optint);
+      Context_free.Rule.constant Integer 'I' (expander int63);
+    ]
