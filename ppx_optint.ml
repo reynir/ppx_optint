@@ -36,13 +36,21 @@ let int63 s =
   else
     apply int63 "of_string" [Exp.constant (Const.string s)]
 
-let expander f loc s =
-  with_default_loc loc (fun () -> f s)
+let expander m f loc s =
+  with_default_loc loc @@ fun () ->
+  try f s
+  with Failure msg ->
+    (* XXX: [msg] is often not very helpful *)
+    let error s =
+      Exp.extension ~loc
+        (Location.Error.to_extension (Location.Error.make ~loc ~sub:[] s))
+    in
+    Format.kasprintf error "Bad %s integer literal. %s." m msg
 
 let () =
   Driver.register_transformation
     "ppx_optint"
     ~rules:[
-      Context_free.Rule.constant Integer 'i' (expander optint);
-      Context_free.Rule.constant Integer 'I' (expander int63);
+      Context_free.Rule.constant Integer 'i' (expander "Optint.t" optint);
+      Context_free.Rule.constant Integer 'I' (expander "Optint.Int63.t" int63);
     ]
