@@ -19,8 +19,12 @@ let optint s =
     mklid optint "one"
   else if Optint.equal x Optint.minus_one then
     mklid optint "minus_one"
-  else
-    apply optint "of_string" [Exp.constant (Const.string s)]
+  else match Int32.of_string_opt s with
+    | Some n ->
+      (* XXX: We assume what works in the ppx will work in the resulting binary *)
+      apply optint "of_unsigned_int32" [Exp.constant (Const.int32 n)]
+    | None ->
+      apply optint "of_string" [Exp.constant (Const.string s)]
 
 let int63 = Longident.Ldot (Longident.Lident "Optint", "Int63")
 
@@ -33,8 +37,11 @@ let int63 s =
     mklid int63 "one"
   else if Int63.equal x Int63.minus_one then
     mklid int63 "minus_one"
-  else
-    apply int63 "of_string" [Exp.constant (Const.string s)]
+  else match int_of_string_opt s with
+    | Some n ->
+      apply int63 "of_unsigned_int" [Exp.constant (Const.int n)]
+    | None ->
+      apply int63 "of_string" [Exp.constant (Const.string s)]
 
 let expander m f loc s =
   with_default_loc loc @@ fun () ->
